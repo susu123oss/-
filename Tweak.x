@@ -46,6 +46,7 @@ static uintptr_t getModuleBase(const char *moduleName) {
 }
 
 // 补丁配置与地址定义
+static const char * const kPVZPluginVersion = "1.3.1";
 static uintptr_t g_lawnBase = 0;
 static const uintptr_t kSunCostPatchOffset = 0xFDF94;    // sub w0, w0, w20 -> add w0, w0, w20
 static const uintptr_t kFreeCostPatchOffset = 0x11B470;  // GetCurrentPlantCost 恒返回 0: mov w0, wzr; ret
@@ -518,40 +519,64 @@ static void applyConfiguredPatches(void) {
                                       (rootVC.view.bounds.size.height - panelH) / 2.0,
                                       panelW, panelH);
     self.menuPanel.layer.cornerRadius = 22.0;
-    self.menuPanel.layer.masksToBounds = YES;
-    self.menuPanel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.18].CGColor;
-    self.menuPanel.layer.borderWidth = 1.0;
+    self.menuPanel.layer.masksToBounds = NO;
+    self.menuPanel.layer.shadowColor = [UIColor colorWithWhite:0 alpha:0.55].CGColor;
+    self.menuPanel.layer.shadowOffset = CGSizeMake(0, 10);
+    self.menuPanel.layer.shadowRadius = 24.0;
+    self.menuPanel.layer.shadowOpacity = 1.0;
     self.menuPanel.transform = CGAffineTransformMakeScale(0.85, 0.85);
     self.menuPanel.alpha = 0;
 
     UIView *content = self.menuPanel.contentView;
+    content.layer.cornerRadius = 22.0;
+    content.layer.masksToBounds = YES;
+    content.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.18].CGColor;
+    content.layer.borderWidth = 1.0;
 
-    // 标题栏：发光小图标与标题
-    UILabel *iconBadge = [[UILabel alloc] initWithFrame:CGRectMake(18, 14, 24, 24)];
+    // 标题栏：发光小图标底座、标题与版本胶囊
+    UIView *iconBadgeBg = [[UIView alloc] initWithFrame:CGRectMake(16, 12, 28, 28)];
+    iconBadgeBg.backgroundColor = [UIColor colorWithRed:0.98 green:0.75 blue:0.14 alpha:0.20];
+    iconBadgeBg.layer.cornerRadius = 8.0;
+    iconBadgeBg.layer.borderWidth = 0.5;
+    iconBadgeBg.layer.borderColor = [UIColor colorWithRed:0.98 green:0.75 blue:0.14 alpha:0.40].CGColor;
+    [content addSubview:iconBadgeBg];
+
+    UILabel *iconBadge = [[UILabel alloc] initWithFrame:iconBadgeBg.bounds];
     iconBadge.text = @"☀️";
-    iconBadge.font = [UIFont systemFontOfSize:17];
-    [content addSubview:iconBadge];
+    iconBadge.font = [UIFont systemFontOfSize:16];
+    iconBadge.textAlignment = NSTextAlignmentCenter;
+    [iconBadgeBg addSubview:iconBadge];
 
-    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(46, 14, 200, 24)];
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(52, 14, 150, 24)];
     titleLabel.text = @"植物大战僵尸 辅助控制";
     titleLabel.textColor = [UIColor whiteColor];
     titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
     [content addSubview:titleLabel];
 
+    UILabel *verBadge = [[UILabel alloc] initWithFrame:CGRectMake(208, 17, 44, 18)];
+    verBadge.text = [NSString stringWithUTF8String:kPVZPluginVersion];
+    verBadge.textColor = [UIColor colorWithRed:0.20 green:0.85 blue:0.55 alpha:1.0];
+    verBadge.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightMedium];
+    verBadge.textAlignment = NSTextAlignmentCenter;
+    verBadge.backgroundColor = [UIColor colorWithRed:0.06 green:0.72 blue:0.51 alpha:0.15];
+    verBadge.layer.cornerRadius = 9.0;
+    verBadge.layer.masksToBounds = YES;
+    [content addSubview:verBadge];
+
     // 现代化胶囊关闭按钮
     UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    closeBtn.frame = CGRectMake(panelW - 44, 12, 28, 28);
-    closeBtn.layer.cornerRadius = 14.0;
-    closeBtn.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.12];
+    closeBtn.frame = CGRectMake(panelW - 42, 13, 26, 26);
+    closeBtn.layer.cornerRadius = 13.0;
+    closeBtn.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.10];
     [closeBtn setTitle:@"✕" forState:UIControlStateNormal];
-    [closeBtn setTitleColor:[UIColor colorWithWhite:0.85 alpha:1.0] forState:UIControlStateNormal];
-    closeBtn.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+    [closeBtn setTitleColor:[UIColor colorWithWhite:0.80 alpha:1.0] forState:UIControlStateNormal];
+    closeBtn.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
     [closeBtn addTarget:self action:@selector(toggleMenu) forControlEvents:UIControlEventTouchUpInside];
     [content addSubview:closeBtn];
 
     // 分割线
-    UIView *line = [[UIView alloc] initWithFrame:CGRectMake(16, 45, panelW - 32, 0.5)];
-    line.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.12];
+    UIView *line = [[UIView alloc] initWithFrame:CGRectMake(16, 46, panelW - 32, 0.5)];
+    line.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.10];
     [content addSubview:line];
 
     // 滚动区域容纳五大核心功能卡片
@@ -564,47 +589,59 @@ static void applyConfiguredPatches(void) {
     }
     [content addSubview:self.scrollView];
 
-    // 功能卡片 1：阳光不减反增加
-    [self addToggleItemIn:self.scrollView y:4 title:@"阳光不减反增加" desc:@"种植植物不消耗，反而补充对应阳光" defaultOn:getPrefBool(kPrefKeySunAdd, NO) action:@selector(sunAddChanged:)];
+    // 五大核心功能卡片（带专属图标与高辨识度视觉设计）
+    [self addToggleItemIn:self.scrollView y:4 icon:@"☀️" title:@"阳光不减反增加" desc:@"种植植物不消耗，反而补充对应阳光" defaultOn:getPrefBool(kPrefKeySunAdd, NO) action:@selector(sunAddChanged:)];
 
-    // 功能卡片 2：任意植物免费种植
-    [self addToggleItemIn:self.scrollView y:62 title:@"任意植物免费种植" desc:@"植物花费恒为0，开局立即可种" defaultOn:getPrefBool(kPrefKeyFreePlant, NO) action:@selector(freePlantChanged:)];
+    [self addToggleItemIn:self.scrollView y:62 icon:@"🌱" title:@"任意植物免费种植" desc:@"植物花费恒为0，开局立即可种" defaultOn:getPrefBool(kPrefKeyFreePlant, NO) action:@selector(freePlantChanged:)];
 
-    // 功能卡片 3：植物种植无冷却
-    [self addToggleItemIn:self.scrollView y:120 title:@"植物种植无冷却" desc:@"卡片种植后瞬间点亮，无需等待冷却" defaultOn:getPrefBool(kPrefKeyNoCooldown, NO) action:@selector(noCooldownChanged:)];
+    [self addToggleItemIn:self.scrollView y:120 icon:@"⚡" title:@"植物种植无冷却" desc:@"卡片种植后瞬间点亮，无需等待冷却" defaultOn:getPrefBool(kPrefKeyNoCooldown, NO) action:@selector(noCooldownChanged:)];
 
-    // 功能卡片 4：全屏自动吸附掉落
-    [self addToggleItemIn:self.scrollView y:178 title:@"全屏自动吸附掉落" desc:@"阳光、金币、钻石生成瞬间自动入账" defaultOn:getPrefBool(kPrefKeyAutoCollect, NO) action:@selector(autoCollectChanged:)];
+    [self addToggleItemIn:self.scrollView y:178 icon:@"🧲" title:@"全屏自动吸附掉落" desc:@"阳光、金币、钻石生成瞬间自动入账" defaultOn:getPrefBool(kPrefKeyAutoCollect, NO) action:@selector(autoCollectChanged:)];
 
-    // 功能卡片 5：植物绝对无敌保护
-    [self addToggleItemIn:self.scrollView y:236 title:@"植物绝对无敌保护" desc:@"免疫僵尸啃咬、巨人重砸、冰车碾压与自爆" defaultOn:getPrefBool(kPrefKeyInvulnerable, NO) action:@selector(plantInvulnerableChanged:)];
+    [self addToggleItemIn:self.scrollView y:236 icon:@"🛡️" title:@"植物绝对无敌保护" desc:@"免疫僵尸啃咬、巨人重砸、冰车碾压与自爆" defaultOn:getPrefBool(kPrefKeyInvulnerable, NO) action:@selector(plantInvulnerableChanged:)];
 
 }
 
-- (void)addToggleItemIn:(UIView *)parent y:(CGFloat)y title:(NSString *)title desc:(NSString *)desc defaultOn:(BOOL)defaultOn action:(SEL)action {
+- (void)addToggleItemIn:(UIView *)parent y:(CGFloat)y icon:(NSString *)icon title:(NSString *)title desc:(NSString *)desc defaultOn:(BOOL)defaultOn action:(SEL)action {
     CGFloat w = parent.bounds.size.width;
-    UIView *card = [[UIView alloc] initWithFrame:CGRectMake(16, y, w - 32, 54)];
-    card.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.08];
+    CGFloat cardW = w - 32;
+    UIView *card = [[UIView alloc] initWithFrame:CGRectMake(16, y, cardW, 54)];
+    card.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.07];
     card.layer.cornerRadius = 14.0;
     card.layer.borderWidth = 0.5;
-    card.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
+    card.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.12].CGColor;
 
-    UILabel *tLabel = [[UILabel alloc] initWithFrame:CGRectMake(14, 8, 195, 19)];
+    // 左侧专属图标圆角容器
+    UIView *iconBox = [[UIView alloc] initWithFrame:CGRectMake(10, 9, 36, 36)];
+    iconBox.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.08];
+    iconBox.layer.cornerRadius = 10.0;
+    iconBox.layer.borderWidth = 0.5;
+    iconBox.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.10].CGColor;
+    [card addSubview:iconBox];
+
+    UILabel *iconLabel = [[UILabel alloc] initWithFrame:iconBox.bounds];
+    iconLabel.text = icon;
+    iconLabel.font = [UIFont systemFontOfSize:18];
+    iconLabel.textAlignment = NSTextAlignmentCenter;
+    [iconBox addSubview:iconLabel];
+
+    CGFloat textW = cardW - 54 - 64;
+    UILabel *tLabel = [[UILabel alloc] initWithFrame:CGRectMake(54, 8, textW, 19)];
     tLabel.text = title;
     tLabel.textColor = [UIColor whiteColor];
     tLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
     [card addSubview:tLabel];
 
-    UILabel *dLabel = [[UILabel alloc] initWithFrame:CGRectMake(14, 28, 195, 18)];
+    UILabel *dLabel = [[UILabel alloc] initWithFrame:CGRectMake(54, 29, textW, 16)];
     dLabel.text = desc;
-    dLabel.textColor = [UIColor colorWithWhite:0.72 alpha:1.0];
+    dLabel.textColor = [UIColor colorWithWhite:0.70 alpha:1.0];
     dLabel.font = [UIFont systemFontOfSize:10.5];
     dLabel.numberOfLines = 1;
     [card addSubview:dLabel];
 
-    UISwitch *sw = [[UISwitch alloc] initWithFrame:CGRectMake(card.bounds.size.width - 64, 12, 50, 30)];
+    UISwitch *sw = [[UISwitch alloc] initWithFrame:CGRectMake(cardW - 60, 11, 48, 30)];
     sw.on = defaultOn;
-    sw.onTintColor = [UIColor colorWithRed:0.06 green:0.72 blue:0.51 alpha:1.0];
+    sw.onTintColor = [UIColor colorWithRed:0.06 green:0.75 blue:0.52 alpha:1.0];
     [sw addTarget:self action:action forControlEvents:UIControlEventValueChanged];
     [card addSubview:sw];
 
@@ -725,7 +762,7 @@ static void applyConfiguredPatches(void) {
 
 %ctor {
     @autoreleasepool {
-        NSLog(@"[PVZSun] 插件已加载，开始初始化...");
+        NSLog(@"[PVZSun] 插件已加载 (v%s)，开始初始化...", kPVZPluginVersion);
         applyConfiguredPatches();
 
         // 监听应用进入前台或就绪时挂载悬浮球 UI，并二次确保补丁就绪

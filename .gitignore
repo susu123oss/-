@@ -5,3 +5,7 @@
 Lawn_IOS_bin
 *.bin
 *.ipa
+dist/
+packages/
+*.deb
+*.dylib
