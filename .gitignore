@@ -2,3 +2,6 @@
 *.o
 *.Td
 .DS_Store
+Lawn_IOS_bin
+*.bin
+*.ipa
