@@ -9,3 +9,4 @@ dist/
 packages/
 *.deb
 *.dylib
+.mt-analysis/
