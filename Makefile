@@ -11,6 +11,12 @@ endif
 TARGET := iphone:clang:latest:14.0
 ARCHS := arm64 arm64e
 
+# OLLVM 混淆参数兼容性适配（过滤在 arm64/arm64e 上导致 ptrauth 与 relocation 崩溃的参数）
+ifneq ($(strip $(CA_OLLVM_REQUIRED)),)
+  CA_OLLVM_ARM64_CFLAGS := -mllvm --irobf-cse -mllvm --irobf-fla -mllvm --irobf-cie -mllvm --irobf-cfe
+  CA_OLLVM_ARM64E_CFLAGS := -mllvm --irobf-cse -mllvm --irobf-fla -mllvm --irobf-cie -mllvm --irobf-cfe
+endif
+
 export PERL5LIB := $(THEOS)/../usr/share/perl5/5.32:$(THEOS)/../usr/lib/perl5/5.32:$(PERL5LIB)
 
 include $(THEOS)/makefiles/common.mk
